@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Strix Google Reviews Admin Panel
  * Plugin URI: https://strixmedia.ru
- * Description: Admin panel for connecting Google Business Profiles and managing reviews for Strix Google Reviews plugin
+ * Description: Independent admin panel for configuring Google API keys and managing review display settings
  * Version: 1.0.0
  * Author: Strix Media
  * Author URI: https://strixmedia.ru
@@ -51,32 +51,25 @@ class Strix_Google_Reviews_Admin {
         add_action('wp_ajax_strix_google_reviews_admin_connect', array($this, 'handle_google_connect'));
         add_action('wp_ajax_strix_google_reviews_admin_get_reviews', array($this, 'handle_get_reviews'));
 
-        // Add admin menu if main plugin is active
-        if ($this->is_main_plugin_active()) {
-            add_action('admin_menu', array($this, 'add_admin_menu'));
-        }
+        // Add admin menu - this plugin works independently
+        add_action('admin_menu', array($this, 'add_admin_menu'));
     }
 
     /**
      * Check if main Strix Google Reviews plugin is active
+     * Note: Admin panel works independently but can integrate with main plugin if available
      */
     private function is_main_plugin_active() {
-        // First check if plugin is activated in WordPress
-        if (!is_plugin_active('strix-google-review/strix-google-reviews.php')) {
-            return false;
+        // Admin panel can work independently - return true by default
+        // This allows the admin panel to function even without the main plugin
+
+        // Optionally check if main plugin is available for integration
+        if (is_plugin_active('strix-google-review/strix-google-reviews.php') && class_exists('TrustindexPlugin_google')) {
+            global $trustindexPlugin_google;
+            return $trustindexPlugin_google ? true : false;
         }
 
-        // Then check if the main plugin class is loaded
-        if (!class_exists('TrustindexPlugin_google')) {
-            return false;
-        }
-
-        // Check if global instance exists
-        global $trustindexPlugin_google;
-        if (!$trustindexPlugin_google) {
-            return false;
-        }
-
+        // Admin panel works independently
         return true;
     }
 
@@ -332,35 +325,41 @@ class Strix_Google_Reviews_Admin {
                 </div>
             </div>
 
-            <div class="card">
-                <h3><?php _e('System Information', 'strix-google-reviews-admin'); ?></h3>
-                <table class="widefat">
-                    <tr>
-                        <td><strong><?php _e('Main Plugin Status', 'strix-google-reviews-admin'); ?>:</strong></td>
-                        <td><?php echo $this->is_main_plugin_active() ? '<span style="color: green;">✓ Active</span>' : '<span style="color: red;">✗ Inactive</span>'; ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php _e('Main Plugin File', 'strix-google-reviews-admin'); ?>:</strong></td>
-                        <td><?php echo file_exists(WP_PLUGIN_DIR . '/strix-google-review/strix-google-reviews.php') ? '<span style="color: green;">✓ Found</span>' : '<span style="color: red;">✗ Missing</span>'; ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php _e('Main Plugin Class', 'strix-google-reviews-admin'); ?>:</strong></td>
-                        <td><?php echo class_exists('TrustindexPlugin_google') ? '<span style="color: green;">✓ Loaded</span>' : '<span style="color: orange;">⚠ Not loaded yet</span>'; ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php _e('Google API Key', 'strix-google-reviews-admin'); ?>:</strong></td>
-                        <td><?php echo !empty($this->get_settings()['google_maps_api_key']) ? '<span style="color: green;">✓ Set</span>' : '<span style="color: orange;">⚠ Not Set</span>'; ?></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php _e('Cache Status', 'strix-google-reviews-admin'); ?>:</strong></td>
-                        <td><span style="color: green;"><?php _e('✓ Active', 'strix-google-reviews-admin'); ?></span></td>
-                    </tr>
-                    <tr>
-                        <td><strong><?php _e('Connected Profiles', 'strix-google-reviews-admin'); ?>:</strong></td>
-                        <td><?php echo $pageDetails ? '<span style="color: green;">✓ ' . esc_html($pageDetails['name'] ?? 'Profile connected') . '</span>' : '<span style="color: orange;">⚠ None</span>'; ?></td>
-                    </tr>
-                </table>
-            </div>
+                <div class="card">
+                    <h3><?php _e('System Information', 'strix-google-reviews-admin'); ?></h3>
+                    <table class="widefat">
+                        <tr>
+                            <td><strong><?php _e('Admin Panel Status', 'strix-google-reviews-admin'); ?>:</strong></td>
+                            <td><span style="color: green;">✓ <?php _e('Active (Independent)', 'strix-google-reviews-admin'); ?></span></td>
+                        </tr>
+                        <tr>
+                            <td><strong><?php _e('Main Plugin Status', 'strix-google-reviews-admin'); ?>:</strong></td>
+                            <td><?php echo is_plugin_active('strix-google-review/strix-google-reviews.php') ? '<span style="color: green;">✓ Active (Integrated)</span>' : '<span style="color: blue;">ℹ Standalone Mode</span>'; ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong><?php _e('Google API Key', 'strix-google-reviews-admin'); ?>:</strong></td>
+                            <td><?php echo !empty($this->get_settings()['google_maps_api_key']) ? '<span style="color: green;">✓ Configured</span>' : '<span style="color: orange;">⚠ Not Set</span>'; ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong><?php _e('API Testing', 'strix-google-reviews-admin'); ?>:</strong></td>
+                            <td><?php echo !empty($this->get_settings()['google_maps_api_key']) ? '<span style="color: blue;">Ready to test</span>' : '<span style="color: gray;">Set API key first</span>'; ?></td>
+                        </tr>
+                        <tr>
+                            <td><strong><?php _e('Cache System', 'strix-google-reviews-admin'); ?>:</strong></td>
+                            <td><span style="color: green;"><?php printf(__('✓ Active (%d sec)', 'strix-google-reviews-admin'), $this->get_settings()['cache_time'] ?? 3600); ?></span></td>
+                        </tr>
+                        <tr>
+                            <td><strong><?php _e('Review Limits', 'strix-google-reviews-admin'); ?>:</strong></td>
+                            <td><span style="color: green;"><?php printf(__('✓ Max %d reviews', 'strix-google-reviews-admin'), $this->get_settings()['max_reviews'] ?? 50); ?></span></td>
+                        </tr>
+                        <?php if ($pageDetails): ?>
+                        <tr>
+                            <td><strong><?php _e('Connected Profiles', 'strix-google-reviews-admin'); ?>:</strong></td>
+                            <td><?php echo '<span style="color: green;">✓ ' . esc_html($pageDetails['name'] ?? 'Profile connected') . '</span>'; ?></td>
+                        </tr>
+                        <?php endif; ?>
+                    </table>
+                </div>
         </div>
 
         <style>
@@ -685,11 +684,12 @@ class Strix_Google_Reviews_Admin {
     }
 
     /**
-     * Get page details from main plugin
+     * Get page details from main plugin (if available)
      */
     private function get_page_details_from_main_plugin() {
-        if (!$this->is_main_plugin_active()) {
-            return false;
+        // Check if main plugin is available and active
+        if (!is_plugin_active('strix-google-review/strix-google-reviews.php') || !class_exists('TrustindexPlugin_google')) {
+            return false; // Main plugin not available
         }
 
         global $trustindexPlugin_google;
@@ -706,11 +706,12 @@ class Strix_Google_Reviews_Admin {
     }
 
     /**
-     * Get reviews from main plugin
+     * Get reviews from main plugin (if available)
      */
     private function get_reviews_from_main_plugin() {
-        if (!$this->is_main_plugin_active()) {
-            return array();
+        // Check if main plugin is available and active
+        if (!is_plugin_active('strix-google-review/strix-google-reviews.php') || !class_exists('TrustindexPlugin_google')) {
+            return array(); // Main plugin not available
         }
 
         global $trustindexPlugin_google;
@@ -1436,15 +1437,17 @@ add_action('plugins_loaded', 'strix_google_reviews_admin_init');
  * Activation hook
  */
 function strix_google_reviews_admin_activate() {
-    // Check if main plugin is active in WordPress
-    if (!is_plugin_active('strix-google-review/strix-google-reviews.php')) {
-        wp_die(__('Please activate the main Strix Google Reviews plugin first.', 'strix-google-reviews-admin'));
+    // Admin panel works independently - no dependency on main plugin required
+    // This allows developers to configure API keys and test functionality separately
+
+    // Optional: Check if WordPress environment is compatible
+    if (version_compare(PHP_VERSION, '7.4', '<')) {
+        wp_die(__('Strix Google Reviews Admin requires PHP 7.4 or higher.', 'strix-google-reviews-admin'));
     }
 
-    // Additional check: verify the main plugin file exists
-    $main_plugin_file = WP_PLUGIN_DIR . '/strix-google-review/strix-google-reviews.php';
-    if (!file_exists($main_plugin_file)) {
-        wp_die(__('Main Strix Google Reviews plugin files not found. Please reinstall the main plugin.', 'strix-google-reviews-admin'));
+    // Optional: Check if WordPress version is compatible
+    if (version_compare(get_bloginfo('version'), '5.0', '<')) {
+        wp_die(__('Strix Google Reviews Admin requires WordPress 5.0 or higher.', 'strix-google-reviews-admin'));
     }
 }
 register_activation_hook(__FILE__, 'strix_google_reviews_admin_activate');

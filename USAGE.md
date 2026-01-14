@@ -107,8 +107,8 @@ The plugin integrates with the main Strix Google Reviews plugin through:
 
 - WordPress 5.0+
 - PHP 7.4+
-- Main Strix Google Reviews plugin
-- Google Places API key (configured in main plugin)
+- Main Strix Google Reviews plugin (optional, for full integration)
+- Google Places API key (configured in admin panel)
 
 ### Customization
 
