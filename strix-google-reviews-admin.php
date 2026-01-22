@@ -51,8 +51,10 @@ class Strix_Google_Reviews_Admin {
         add_action('wp_ajax_strix_google_reviews_admin_connect', array($this, 'handle_google_connect'));
         add_action('wp_ajax_strix_google_reviews_admin_get_reviews', array($this, 'handle_get_reviews'));
 
-        // Add admin menu - this plugin works independently
-        add_action('admin_menu', array($this, 'add_admin_menu'));
+        // Add admin menu if main plugin is active
+        if ($this->is_main_plugin_active()) {
+            add_action('admin_menu', array($this, 'add_admin_menu'));
+        }
     }
 
     /**
